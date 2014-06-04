@@ -62,9 +62,7 @@ public class Usermgmt extends ServerResource {
 				if ("login".equals(action)) {
 					userLogin(form);
 				} else if ("register".equals(action)) {
-					userRegister(form);
-				} else if ("userinfo".equals(action)) {
-					userInfo(form);
+					//userRegister(form);
 				}
 
 			} catch (Exception e) {
@@ -81,7 +79,7 @@ public class Usermgmt extends ServerResource {
 		String username = "";
 		String usereid = form.getFirstValue("usereid");
 		String password = form.getFirstValue("password");
-		String queryString = "SELECT userid, eid, username, userpasswd from users WHERE eid = '" + usereid
+		String queryString = "SELECT eid, username, userpasswd from users WHERE eid = '" + usereid
 				  + "' and userpasswd = '" + password +"'";
 		try {
 			logger.info("query user with:"+queryString);
@@ -99,36 +97,11 @@ public class Usermgmt extends ServerResource {
 		}	
 	}
 
-	private void userInfo(Form form){
-		String usereid = form.getFirstValue("usereid");
-		String password = form.getFirstValue("password");
-		String queryString = "SELECT eid, username, enly,ensl,enal,tkly,tksl,tkal from userinfo WHERE eid = '" + usereid +"'";
-		try {
-			logger.info("query user with:"+queryString);
-			resultset = statement.executeQuery(queryString);
-			if (resultset.next()) {
-				jsonObj.put("state", 200);
-				jsonObj.put("eId", usereid);
-				jsonObj.put("username", resultset.getString("username"));
-				jsonObj.put("enly",resultset.getInt("enly"));
-				jsonObj.put("ensl",resultset.getInt("ensl"));
-				jsonObj.put("enal",resultset.getInt("enal"));
-				jsonObj.put("tkly",resultset.getInt("tkly"));
-				jsonObj.put("tksl",resultset.getInt("tksl"));
-				jsonObj.put("tkal",resultset.getInt("tkal"));
-			} else {
-				jsonObj.put("state", 104);
-				jsonObj.put("msg", "Fail to get User info!");				
-			}
-		} catch (Exception e){
-			e.printStackTrace();
-		}	
-	}
-	
 	private void userRegister(Form form){
+		String usereid = form.getFirstValue("eid");
 		String userName = form.getFirstValue("username");
 		String userpasswd = form.getFirstValue("password");
-		String queryString = "SELECT userid,username,userpasswd from users WHERE username = '" + userName + "'";
+		String queryString = "SELECT eid,username,userpasswd from users WHERE eid = '" + usereid + "'";
 		int userid=-1;
 		
 		try{
@@ -146,10 +119,10 @@ public class Usermgmt extends ServerResource {
 					jsonObj.put("msg", "User has been registered!");
 				} else {
 					
-					String insertString = "INSERT INTO users (username, userpasswd) values('"+userName+"','"+userpasswd+"');";
+					String insertString = "INSERT INTO users (eid, username, userpasswd) values('"+usereid+"','"+userName+"','"+userpasswd+"');";
 					logger.info("insert user with:"+insertString);
 					statement.executeUpdate(insertString);
-					resultset = statement.executeQuery("SELECT userid,username,userpasswd from users WHERE username = '" + userName + "'");
+					resultset = statement.executeQuery("SELECT eid,username,userpasswd from users WHERE eid = '" + usereid + "'");
 					if (resultset.next()) {
     					userid = resultset.getInt(1);
 	    				jsonObj.put("state", 200);

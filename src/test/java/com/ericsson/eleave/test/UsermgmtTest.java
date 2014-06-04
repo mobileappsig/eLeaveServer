@@ -15,8 +15,8 @@ public class UsermgmtTest {
 	@Test
 	public void UserLoginSuccess() {
 		Form form = new Form();
-		form.add("username","aaa");
-		form.add("password","bbb");
+		form.add("usereid","test");
+		form.add("password","aaa");
 		
 		System.out.println("UserLoginSuccess");
 

@@ -25,8 +25,6 @@ public class EleaveDB {
 				logger.info("can not connect to database");
 			} else {
 				Statement statement = connection.createStatement();
-				statement.executeUpdate("create table if not exists users(userid integer PRIMARY KEY autoincrement, username varchar(200) NOT NULL, userpasswd varchar(200) NOT NULL, logindate datetime default (datetime('now', 'localtime')));");
-				statement.executeUpdate("insert into users(username,userpasswd) values('aaa','bbb');");
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -36,13 +34,17 @@ public class EleaveDB {
 	public static Connection getConnection() {
 		if (connection == null) {
 	    	try {
-	    		Class.forName("org.sqlite.JDBC");
-		    	connection = DriverManager.getConnection("jdbc:sqlite:C:/EleaveApp/eleave.db");
+	    		Class.forName("com.mysql.jdbc.Driver");
+	    		//String url = "jdbc:mysql://10.178.255.124:3306/eleave?useUnicode=true&characterEncoding=utf-8";
+	    		String url = "jdbc:mysql://127.0.0.1:3306/eleave";
+	    		String username = "root";
+	    		String password = "";
+		    	connection = DriverManager.getConnection(url,username,password);
 				Statement statement = connection.createStatement();
-				statement.executeUpdate("create table if not exists users(userid integer PRIMARY KEY autoincrement, username varchar(200) NOT NULL, userpasswd varchar(200) NOT NULL, logindate datetime default (datetime('now', 'localtime')));");
-				statement.executeUpdate("insert into users(username,userpasswd) values('aaa','bbb');");
+				System.out.print("connect DB!");
 		  	} catch (Exception e) {
 				logger.info("can not connect to database");
+				System.out.print("cannot connect DB!");
 				e.printStackTrace();
 			}
 		} 
