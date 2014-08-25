@@ -22,7 +22,8 @@ public class AppRouter extends Application{
 		Router router = new Router(getContext());
 		logger.info("router start");
 		
-		router.attach("/Users/{action}", Usermgmt.class);
+		router.attach("/Users/{action}", UserMgmt.class);
+		router.attach("/Apply/{action}", LeaveRequest.class);
 
 		return router;
 	}

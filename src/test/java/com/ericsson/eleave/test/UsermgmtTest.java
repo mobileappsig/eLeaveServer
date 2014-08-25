@@ -12,11 +12,31 @@ import org.restlet.resource.ClientResource;
 
 public class UsermgmtTest {
 	private static final Log logger = LogFactory.getLog("UsermgmtTest.class");
+	
+	@Test
+	public void UserInfoSuccess() {
+		Form form = new Form();
+		form.add("EID","ELEAERI");
+		
+		ClientResource client = new ClientResource(
+				"http://localhost:8080/eleaveAppServer/API/Users/leaveinfo");
+		System.out.println(client.toString());
+		logger.info("UserLoginSuccess!");
+		Representation representation = client.post(form.getWebRepresentation());
+		try {
+			System.out.println("result:"+representation.getText());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			Assert.fail("Get HHO RealTime data failed");
+			e.printStackTrace();
+		}
+	}
+	
 	@Test
 	public void UserLoginSuccess() {
 		Form form = new Form();
-		form.add("usereid","test");
-		form.add("password","aaa");
+		form.add("EID","ELEAERI");
+		form.add("password","123");
 		
 		System.out.println("UserLoginSuccess");
 
