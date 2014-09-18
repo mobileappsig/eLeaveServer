@@ -1,8 +1,6 @@
-package com.ericsson.eleave.common;
+package com.ericsson.eleave.Logic;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.Statement;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -17,8 +15,8 @@ import org.restlet.resource.Post;
 import org.restlet.resource.ServerResource;
 import org.json.JSONObject;
 
-import com.ericsson.eleave.db.EleaveDB;
-import com.ericsson.eleave.db.LeavePolicy;
+import com.ericsson.eleave.util.EleaveDB;
+import com.ericsson.eleave.util.LeaveProc;
 
 /**
  * 
@@ -28,14 +26,14 @@ import com.ericsson.eleave.db.LeavePolicy;
 public class UserMgmt extends ServerResource {
 	private static final Log logger = LogFactory.getLog("UserMgmt.class");
 	protected JSONObject jsonObj = new JSONObject();
-	private Connection connection = null;
+	//private Connection connection = null;
 	//private Statement statement = null;
 	//private ResultSet resultset = null;
 	
 	@Override
 	public void init(Context context, Request request, Response response) {
 		super.init(context, request, response);
-		try {
+		/*try {
 			connection = EleaveDB.getConnection();
 			if (connection == null) {
 				logger.info("can not connect to database");
@@ -44,7 +42,7 @@ public class UserMgmt extends ServerResource {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-		}
+		}*/
 	}
 	
 	@Post
@@ -82,7 +80,7 @@ public class UserMgmt extends ServerResource {
 		String eId = form.getFirstValue("EID");
 
 		try {
-			jsonObj = LeavePolicy.getLeave(eId);
+			jsonObj = LeaveProc.getLeaveInfo(eId);
 			if (jsonObj == null) {
 				jsonObj = new JSONObject();
 				jsonObj.put("state", 104);

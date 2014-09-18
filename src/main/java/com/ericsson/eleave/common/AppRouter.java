@@ -6,6 +6,9 @@ import org.restlet.Application;
 import org.restlet.Restlet;
 import org.restlet.routing.Router;
 
+import com.ericsson.eleave.Logic.LeaveRequest;
+import com.ericsson.eleave.Logic.UserMgmt;
+
 
 /**
  * 
@@ -23,7 +26,7 @@ public class AppRouter extends Application{
 		logger.info("router start");
 		
 		router.attach("/Users/{action}", UserMgmt.class);
-		router.attach("/Apply/{action}", LeaveRequest.class);
+		router.attach("/Leave/{action}", LeaveRequest.class);
 
 		return router;
 	}

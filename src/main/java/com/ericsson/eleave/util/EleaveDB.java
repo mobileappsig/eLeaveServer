@@ -1,4 +1,4 @@
-package com.ericsson.eleave.db;
+package com.ericsson.eleave.util;
 
 import java.sql.Connection;
 import java.sql.Statement;
@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.util.ArrayList;
 
 import org.apache.commons.logging.Log;
@@ -21,22 +22,21 @@ public class EleaveDB {
 	private static final Log logger = LogFactory.getLog("EleaveDB.class");
 	private static Connection connection = null;
 	private static Statement statement = null;
-/*
-	public EleaveDB(){
+
+    static {
 		try {
-			Class.forName("org.sqlite.JDBC");
-			connection = DriverManager.getConnection("jdbc:sqlite:eleave.db");
-			//connection = getConnection();
+			connection = getConnection();
 			if (connection == null) {
-				logger.info("can not connect to database");
+				logger.info("can not connect to database!");
 			} else {
-				Statement statement = connection.createStatement();
+				//statement = connection.createStatement();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
-	}*/
+	}
+	
 	public static Connection getConnection() {
 		if (connection == null) {
 	    	try {
@@ -47,6 +47,7 @@ public class EleaveDB {
 	    		String username = "root";
 	    		String password = "adminadmin";
 		    	connection = DriverManager.getConnection(url,username,password);
+		    	connection.setAutoCommit(false);
 				statement = connection.createStatement();
 				System.out.print("connect DB!");
 		  	} catch (Exception e) {
@@ -68,6 +69,28 @@ public class EleaveDB {
 			logger.debug(e);
 		}
 		return rsnum;
+	}
+	
+	public static void transCommit() {
+		try{
+		    connection.commit();
+		} catch (SQLException e1) {
+			try {
+			    connection.rollback();
+			} catch (Exception e){
+			    e.printStackTrace();
+			    logger.debug(e);
+		    }	
+		}
+	}
+	
+	public static void transRollback() {
+		try {
+		    connection.rollback();
+		} catch (Exception e){
+		    e.printStackTrace();
+		    logger.debug(e);
+	    }	
 	}
 	
 	public static ResultSet getQueryRs(String sql){
