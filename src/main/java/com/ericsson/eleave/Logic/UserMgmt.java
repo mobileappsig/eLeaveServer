@@ -16,7 +16,6 @@ import org.restlet.resource.ServerResource;
 import org.json.JSONObject;
 
 import com.ericsson.eleave.util.EleaveDB;
-import com.ericsson.eleave.util.LeaveProc;
 
 /**
  * 

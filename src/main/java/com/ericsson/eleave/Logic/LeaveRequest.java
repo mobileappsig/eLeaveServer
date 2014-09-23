@@ -14,7 +14,7 @@ import org.restlet.resource.Post;
 import org.restlet.resource.ServerResource;
 
 import com.ericsson.eleave.util.EleaveDB;
-import com.ericsson.eleave.util.LeaveProc;
+import com.ericsson.eleave.util.Util;
 
 public class LeaveRequest extends ServerResource {
 	private static final Log logger = LogFactory.getLog("LeaveRequest.class");
@@ -37,8 +37,12 @@ public class LeaveRequest extends ServerResource {
 		if ( action!= null) {
 
 			try {
-				if ("newleave".equals(action)) {
+				if ("draftleave".equals(action)) {
 					newLeave(form);
+				} else if ("submitleave".equals(action)) {
+					submitLeave(form);
+				} else if ("cancelleave".equals(action)) {
+					cancelLeave(form);
 				} else if ("queryleave".equals(action)) {
 					queryLeave(form);
 				} else if ("approveleave".equals(action)) {
@@ -68,7 +72,7 @@ public class LeaveRequest extends ServerResource {
 			if (caseId >= 0) {
 				jsonObj.put("state", 200);
 				jsonObj.put("CaseId", caseId);
-				jsonObj.put("StatusID", "2");
+				jsonObj.put("StatusID", "1");
 			}
 			else {
 				jsonObj.put("state", 104);
@@ -80,8 +84,59 @@ public class LeaveRequest extends ServerResource {
 		}	
 	}
 	
+	private void submitLeave(Form form){
+		String newReq = form.getFirstValue("newRequest");
+		String type = form.getFirstValue("type");
+		jsonObj = new JSONObject();
+		int caseId = -1;
+
+		try{
+			JSONObject jsonReq = new JSONObject(newReq);
+			caseId = jsonReq.getInt("CaseId");
+			if ("new".equals(type)){
+			    caseId = LeaveProc.newLeaveRequest(jsonReq);
+			    //System.out.print("caseId:"+caseId);
+			    if (caseId < 0) {
+			    	jsonObj.put("state", 104);
+					jsonObj.put("msg", "Wrong request!");
+					return;
+			    }
+			} 
+            if (LeaveProc.submLeaveRequest(caseId)){
+    			jsonObj.put("state", 200);
+    			jsonObj.put("CaseId", caseId);
+				jsonObj.put("StatusID", "2");
+		    } else {
+		    	jsonObj.put("state", 104);
+				jsonObj.put("msg", "Wrong request!");
+		    }
+				
+   	    } catch (Exception e){
+   	    	e.printStackTrace();
+		}	
+	}
+	
+    private void cancelLeave(Form form){
+    	String caseId = form.getFirstValue("CaseId");
+    	jsonObj = new JSONObject();
+    	
+    	try {
+			if (LeaveProc.cancelLeaveRequest(Util.stringToInt(caseId))){
+				jsonObj.put("state", 200);
+    			jsonObj.put("CaseId", caseId);
+				jsonObj.put("msg", "Case cancel!");
+			} else {
+				jsonObj.put("state", 104);
+    	    	jsonObj.put("msg", "case cancel failed!");
+			}
+    	} catch (Exception e){
+			e.printStackTrace();
+		}
+    }
+
     private void queryLeave(Form form){
     	String caseId = form.getFirstValue("CaseId");
+    	
     	try {
 			jsonObj = LeaveProc.getLeave(caseId);
 			if (jsonObj == null) {
@@ -100,7 +155,7 @@ public class LeaveRequest extends ServerResource {
     	jsonObj = new JSONObject();
     	
     	try{
-    	    if (LeaveProc.approveLeaveRequest(caseId)) {
+    	    if (LeaveProc.approveLeaveRequest(Util.stringToInt(caseId))) {
     	    	jsonObj.put("state", 200);
     	    	jsonObj.put("CaseId", caseId);
 				jsonObj.put("StatusID", "3");

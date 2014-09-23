@@ -1,4 +1,4 @@
-package com.ericsson.eleave.util;
+package com.ericsson.eleave.Logic;
 
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -9,6 +9,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import com.ericsson.eleave.util.EleaveDB;
+import com.ericsson.eleave.util.Util;
 
 
 public class LeaveProc {
@@ -192,7 +195,7 @@ public class LeaveProc {
     	return jsonObj;
     }
     
-    public static int newLeaveRequest(JSONObject jsonObj) {
+/*    public static int newLeaveRequest(JSONObject jsonObj) {
     	JSONArray detailList = new JSONArray();
     	float ttlDays = 0;
     	int caseId = -1;
@@ -277,14 +280,168 @@ public class LeaveProc {
 			e.printStackTrace();
 		}
     	return caseId;
+    }*/
+
+    public static int newLeaveRequest(JSONObject jsonObj) {
+    	JSONArray detailList = new JSONArray();
+    	float ttlDays = 0;
+    	int caseId = -1;
+    	ArrayList<String> subSqls = new ArrayList<String>();
+
+		try {
+    	    String eid = jsonObj.getString("EID");
+    	    String leavaTypeId = jsonObj.getString("LeavaTypeId");
+    	    String issuedDate = jsonObj.getString("IssuedDate");
+    	    detailList = jsonObj.getJSONArray("LeaveDetail");
+    	    // calculate total days
+    	    for (int i=0; i<detailList.length(); i++) {
+    	    	JSONObject detailItem = detailList.getJSONObject(i);
+    	    	String strStartDate = detailItem.getString("StartDay");
+    	    	String strStopDate = detailItem.getString("StopDay");
+    	    	String halfDay = detailItem.getString("HalfDayOrNot");
+    	    	String amPm = detailItem.getString("AmOrPm");
+    	    	String chkSql = "SELECT * from leave_case_detail where StartDay = '" + strStartDate + "' and '" + strStopDate + "' and AmOrPm ";
+    	    	if ("NULL".equals(amPm)) {
+    	    		chkSql += " is " + amPm;
+    	    	} else {
+    	    		chkSql += " = " + amPm;
+    	    	}
+    	    	ResultSet rs = EleaveDB.getQueryRs(chkSql);
+    	    	if (rs.next()){
+    	    		logger.info("Duplicate case:"+rs.getString("CaseId"));
+    	    		return caseId;
+    	    	}
+    	    	String subSql = "INSERT INTO `leave_case_detail` VALUES (?,'"
+ 	    		       + strStartDate + "','" + strStopDate + "'," + halfDay + "," + amPm + ");";
+    	    	subSqls.add(subSql);
+    	    }
+    	    String mainSql = "INSERT INTO `leave_case` (EmployeeId,LeavaTypeId,IssuedDate,StatusID,LeaveDays) VALUES ("
+    	    		       + eid + "," + leavaTypeId + ",'" + issuedDate + "',1," + ttlDays + ");";
+    	    if (EleaveDB.execSql(mainSql)>0) {
+    	    	String querySql = "SELECT LAST_INSERT_ID()";
+    	    	ResultSet rs = EleaveDB.getQueryRs(querySql);
+    	    	if (rs.next()){
+    	    		caseId = rs.getInt(1);
+    	    		System.out.print("caseId:"+caseId);
+    	    	    // insert leave_case_detail
+    	    	    for (int i=0; i<subSqls.size(); i++) {
+    	    	    	String subSql = subSqls.get(i);
+    	    	    	String cid = ""+caseId;
+    	    	    	subSql = subSql.replace("?", cid);
+    	    	    	if (EleaveDB.execSql(subSql)<=0) {
+        	    			EleaveDB.transRollback();
+        	    		}
+    	    	    }
+    	    	    EleaveDB.transCommit();
+    	    	}
+    	    } else {
+    	    	EleaveDB.transRollback();
+    	    }
+    	    
+    	    
+    	} catch (Exception e){
+			e.printStackTrace();
+		}
+    	return caseId;
+    }
+
+    public static boolean submLeaveRequest(int cId) {
+    	boolean submFlag = false;
+    	
+		try {
+			String updSql = "UPDATE leave_case set StatusID = 2 where CaseId = " + cId;
+			submFlag = EleaveDB.execSql(updSql)>0;
+    	    if (submFlag){
+    	    	EleaveDB.transCommit();
+        	} else {
+        		EleaveDB.transRollback();
+        	}
+    	        	    
+    	} catch (Exception e){
+			e.printStackTrace();
+		}
+    	return submFlag;
     }
     
-    public static boolean approveLeaveRequest(String caseId) {
-    	String updSql = "UPDATE leave_case set StatusID = 3 where CaseId = " + caseId;
-    	if (EleaveDB.execSql(updSql)>0){
-    		EleaveDB.transCommit();
-    		return true;
+    public static boolean leaveTakenInfo(int cId){
+    	float ttlDays=0;
+    	float[] ttlTknDays = new float[2];
+    	String eid="";
+    	boolean submFlag = false;
+    	String qrySql = "select EmployeeId,CaseId,LeavaTypeId,StartDay,StopDay,HalfDayOrNot from view_case where CaseId = " + cId;
+    	
+		try {
+			ResultSet rs = EleaveDB.getQueryRs(qrySql);
+    	    // calculate total days
+			while (rs.next()){
+				eid = rs.getString("EmployeeId");
+				Date startDate = rs.getDate("StartDay");
+				Date stopDate = rs.getDate("StopDay");
+    	    	String halfDay = rs.getString("HalfDayOrNot");
+    	    	String leaveTypeId = rs.getString("LeavaTypeId");
+    	    	float day=(stopDate.getTime()-startDate.getTime())/(24*60*60*1000)+1;
+
+    	    	if ("1".equals(halfDay)) {
+    	    		day = day * 0.5f;
+    	    	} 
+    	    	ttlDays += day;
+    	    	if ("1".equals(leaveTypeId)) {
+    	    		ttlTknDays[0] += day;
+    	    	} else if ("2".equals(leaveTypeId)) {
+    	    		ttlTknDays[1] += day;
+    	    	}
+    	    	System.out.print("day:"+day+"ttlDays:"+ttlDays);
+    	    	submFlag = true;
+    	    }
+			if (!submFlag) return submFlag;
+    	    String updSql = "UPDATE leave_case LeaveDays = " + ttlDays + " where CaseId = " + cId;
+    	    if (EleaveDB.execSql(updSql)>0){
+    	    	for (int i=1; i<3; i++){
+    	    		String infoSql = "SELECT * from leave_taken_infor where ThisYear = 1 and EmployeeId = " + eid + " and LeavaTypeId = " + i;
+    	    		ResultSet rs1 = EleaveDB.getQueryRs(infoSql);
+    	    		if (rs1.next()){
+    	    			infoSql = "UPDATE leave_taken_infor set TakenDays = TakenDays + " + ttlTknDays[i-1] 
+    	    					+ "where EmployeeId = " + eid + " and LeavaTypeId = " + i;
+    	    		} else {
+    	    			infoSql = "INSERT INTO leave_taken_infor VALUES (" + eid + "," + i +"," + ttlDays + ",1)";
+    	    		}
+    	    		if (EleaveDB.execSql(infoSql)<=0) {
+    	    			EleaveDB.transRollback();
+    	    		}
+	    		}
+    	    	EleaveDB.transCommit();
+
+        	} else {
+        		EleaveDB.transRollback();
+        	}
+    	        	    
+    	} catch (Exception e){
+			e.printStackTrace();
+		}
+    	return submFlag;
+    }
+    
+    public static boolean cancelLeaveRequest(int cId){
+		EleaveDB.execSql("delete from leave_case_detail where CaseId = " + cId);
+		EleaveDB.execSql("delete from leave_case where CaseId = " + cId);
+		EleaveDB.transCommit();
+
+		String qrySql = "select * from view_case where CaseId = " + cId;
+    	if (EleaveDB.execSql(qrySql)>0){
+    		return false;
     	}
-    	return false;
+    	
+    	return true;
+    }
+    
+    public static boolean approveLeaveRequest(int cId) {
+    	String updSql = "UPDATE leave_case set StatusID = 3 where CaseId = " + cId;
+    	boolean submFlag = (EleaveDB.execSql(updSql)>0) && leaveTakenInfo(cId);
+    	if (submFlag) {
+    		EleaveDB.transCommit();
+    	} else {
+    		EleaveDB.transRollback();
+    	}
+    	return submFlag;
     }
 }

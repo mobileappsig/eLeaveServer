@@ -57,7 +57,50 @@ public class LeavereqTest {
 		form.add("newRequest",jsonReq);
 		
 		ClientResource client = new ClientResource(
-				"http://localhost:8080/eleaveAppServer/API/Leave/newleave");
+				"http://localhost:8080/eleaveAppServer/API/Leave/draftleave");
+		System.out.println(client.toString());
+		Representation representation = client.post(form.getWebRepresentation());
+		logger.info("LeaveNewSuccess!");
+		try {
+			System.out.println("result:"+representation.getText());
+		} catch (Exception e) {
+			Assert.fail("Get HHO RealTime data failed");
+			e.printStackTrace();
+		}
+	}
+	
+	@Test
+	public void LeaveSubmNewSuccess() {
+		Form form = new Form();
+		String jsonReq = "{\"LeavaTypeId\":\"1\",\"EID\":\"10000001\",\"LeaveDays\":\"2.0\",\"StatusID\":\"2\","
+				       + "\"IssuedDate\":\"2014-07-23 10:44:00.0\",\"LeaveDetail\":"
+				       + "[{\"StartDay\":\"2014-08-18\",\"StopDay\":\"2014-08-18\",\"AmOrPm\":\"NULL\",\"HalfDayOrNot\":\"NULL\"},"
+				       + "{\"StartDay\":\"2014-08-20\",\"StopDay\":\"2014-08-20\",\"AmOrPm\":\"NULL\",\"HalfDayOrNot\":\"NULL\"}]}";
+		form.add("newRequest",jsonReq);
+		form.add("type","new");
+		
+		ClientResource client = new ClientResource(
+				"http://localhost:8080/eleaveAppServer/API/Leave/submitleave");
+		System.out.println(client.toString());
+		Representation representation = client.post(form.getWebRepresentation());
+		logger.info("LeaveNewSuccess!");
+		try {
+			System.out.println("result:"+representation.getText());
+		} catch (Exception e) {
+			Assert.fail("Get HHO RealTime data failed");
+			e.printStackTrace();
+		}
+	}
+	
+	@Test
+	public void LeaveSubmDraftSuccess() {
+		Form form = new Form();
+		String jsonReq = "{\"CaseId\":\"0000000002\"}";
+		form.add("newRequest",jsonReq);
+		form.add("type","drafting");
+		
+		ClientResource client = new ClientResource(
+				"http://localhost:8080/eleaveAppServer/API/Leave/submitleave");
 		System.out.println(client.toString());
 		Representation representation = client.post(form.getWebRepresentation());
 		logger.info("LeaveNewSuccess!");

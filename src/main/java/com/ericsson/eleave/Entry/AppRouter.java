@@ -1,4 +1,4 @@
-package com.ericsson.eleave.common;
+package com.ericsson.eleave.Entry;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

@@ -17,4 +17,9 @@ public class Util {
                                               
         return date;  
     } 
+	
+	public static int stringToInt(String str) {
+		return Integer.valueOf(str).intValue();
+		
+	}
 }
