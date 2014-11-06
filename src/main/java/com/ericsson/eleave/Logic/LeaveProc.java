@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.Date; 
+import java.util.Calendar;  
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -289,7 +290,7 @@ public class LeaveProc {
     	ArrayList<String> subSqls = new ArrayList<String>();
 
 		try {
-    	    String eid = jsonObj.getString("EID");
+    	    String eid = jsonObj.getString("EmployeeId");
     	    String leavaTypeId = jsonObj.getString("LeavaTypeId");
     	    String issuedDate = jsonObj.getString("IssuedDate");
     	    detailList = jsonObj.getJSONArray("LeaveDetail");
@@ -300,20 +301,32 @@ public class LeaveProc {
     	    	String strStopDate = detailItem.getString("StopDay");
     	    	String halfDay = detailItem.getString("HalfDayOrNot");
     	    	String amPm = detailItem.getString("AmOrPm");
+    	    	logger.info("check duplicate:"+eid+","+strStartDate+","+strStopDate);
+    	    	
     	    	String chkSql = "SELECT * from leave_case_detail where StartDay = '" + strStartDate + "' and '" + strStopDate + "' and AmOrPm ";
     	    	if ("NULL".equals(amPm)) {
     	    		chkSql += " is " + amPm;
     	    	} else {
     	    		chkSql += " = " + amPm;
     	    	}
+    	    	chkSql += " and HalfDayOrNot = " + halfDay;
     	    	ResultSet rs = EleaveDB.getQueryRs(chkSql);
     	    	if (rs.next()){
     	    		logger.info("Duplicate case:"+rs.getString("CaseId"));
     	    		return caseId;
     	    	}
+    	    	/*
+    	    	if (!chkDupReq(eid,strStartDate,strStopDate,amPm,halfDay)) {
+    	    		logger.info("Duplicate case:"+strStartDate+","+strStopDate);
+    	    		return -1;
+    	    	}*/
     	    	String subSql = "INSERT INTO `leave_case_detail` VALUES (?,'"
  	    		       + strStartDate + "','" + strStopDate + "'," + halfDay + "," + amPm + ");";
     	    	subSqls.add(subSql);
+    	    }
+    	    if (!chkLeftDays(eid,ttlDays)) {
+    	    	logger.info("Days left not enough:"+eid+","+ttlDays);
+	    		return -1;
     	    }
     	    String mainSql = "INSERT INTO `leave_case` (EmployeeId,LeavaTypeId,IssuedDate,StatusID,LeaveDays) VALUES ("
     	    		       + eid + "," + leavaTypeId + ",'" + issuedDate + "',1," + ttlDays + ");";
@@ -363,7 +376,7 @@ public class LeaveProc {
     	return submFlag;
     }
     
-    public static boolean leaveTakenInfo(int cId){
+    public static boolean setLeaveTakenInfo(int cId){
     	float ttlDays=0;
     	float[] ttlTknDays = new float[2];
     	String eid="";
@@ -436,12 +449,83 @@ public class LeaveProc {
     
     public static boolean approveLeaveRequest(int cId) {
     	String updSql = "UPDATE leave_case set StatusID = 3 where CaseId = " + cId;
-    	boolean submFlag = (EleaveDB.execSql(updSql)>0) && leaveTakenInfo(cId);
+    	boolean submFlag = (EleaveDB.execSql(updSql)>0) && setLeaveTakenInfo(cId);
     	if (submFlag) {
     		EleaveDB.transCommit();
     	} else {
     		EleaveDB.transRollback();
     	}
     	return submFlag;
+    }
+    
+    public static boolean chkLeftDays(String eId, float days){
+    	int takeDays = 0;
+    	boolean daysOk = true;
+    	int thistotl = getSALeave("AdditionalAnnualLeaveInThisYear",eId);
+    	int lasttotl = getSALeave("AnnualLeaveInLastYear",eId);
+    	String chkSql = "select StartDay,StopDay,HalfDayOrNot from view_case where EID='" + eId +"' and LeavaTypeId=3 and "
+    			+ "Year(StopDay) = Year(now())";
+    	try {
+        	ResultSet rs = EleaveDB.getQueryRs(chkSql);
+    	    while (rs.next()){
+    		    Date startDate = rs.getDate("StartDay");
+    		    Date stopDate = rs.getDate("StopDay");
+    		    String halfDay = rs.getString("HalfDayOrNot");
+    	    	if (startDate.getYear()<stopDate.getYear()){
+    	    		startDate = getCurrYearFirst();
+    	    	}
+    	    	float day=(stopDate.getTime()-startDate.getTime())/(24*60*60*1000)+1;
+
+    	    	if ("1".equals(halfDay)) {
+    	    		day = day * 0.5f;
+    	    	} 
+    	    	takeDays += day;
+    	    	
+    	    }
+    	    chkSql = "select TakenDays from leave_taken_infor,employee where leave_taken_infor.EID=employee.EID "
+    	    		+ " and employee.EID='" + eId + "' and ThisYear=1";
+    	    rs = EleaveDB.getQueryRs(chkSql);
+    	    if (rs.next()){
+    	    	takeDays += rs.getInt("TakenDays");
+    	    }
+    	    daysOk = (thistotl + lasttotl - takeDays - days) > 0;
+    		
+    	}catch (Exception e){
+			e.printStackTrace();
+		}
+    	
+    	return daysOk;
+    }
+    
+    private static Date getCurrYearFirst(){  
+        Calendar calendar = Calendar.getInstance(); 
+        int year = calendar.get(Calendar.YEAR);
+        calendar.clear();  
+        calendar.set(Calendar.YEAR, year);  
+        Date currYearFirst = calendar.getTime();  
+        return currYearFirst;  
+    }
+    
+    public static boolean chkDupReq(String eId, String sday, String eday, String ampm, String hday){
+    	boolean reqOk = true;
+    	String chksql = "select '" + eId + "' into @eid;";
+    	chksql += "select '"+sday+"' into @sday;";
+    	chksql += "select '"+eday+"' into @eday;";
+    	chksql += "select "+ampm+" into @ampm;";
+    	chksql += "select "+hday+" into @hday;";
+    	chksql += "call check_leave(@eid,@sday,@eday,@hday,@ampm,@leck);";
+    	chksql += "select @leck;";
+    	logger.info("chksql:"+chksql);
+    	try{
+    	    ResultSet rs = EleaveDB.getQueryRs(chksql);
+    	    if (rs.next()){
+    	    	reqOk = (rs.getInt(1) == 1);
+    	    }
+    	} catch (Exception e){
+			e.printStackTrace();
+			reqOk = true;
+		}
+    	
+    	return reqOk;
     }
 }

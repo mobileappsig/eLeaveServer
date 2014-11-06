@@ -42,10 +42,15 @@ public class EleaveDB {
 	    	try {
 	    		Class.forName("com.mysql.jdbc.Driver");
 	    		//String url = "jdbc:mysql://10.178.255.124:3306/eleave?useUnicode=true&characterEncoding=utf-8";
-	    		String url = "jdbc:mysql://127.0.0.1:3307/eleave";
-	    		//url = "jdbc:mysql://10.178.255.124:3306/eleave";
+	    		/*String url = "jdbc:mysql://127.0.0.1:3307/eleave";//
 	    		String username = "root";
-	    		String password = "adminadmin";
+	    		String password = "adminadmin";*/
+	    		//String url = "jdbc:mysql://127.0.0.1:3306/eleave";//
+	    		//String username = "root";
+	    		//String password = "rootroot";
+	    		String url = "jdbc:mysql://10.178.255.124:3306/eleave";
+	    		String username = "root";
+	    		String password = "";
 		    	connection = DriverManager.getConnection(url,username,password);
 		    	connection.setAutoCommit(false);
 				statement = connection.createStatement();
@@ -98,10 +103,12 @@ public class EleaveDB {
 		try {
 			logger.info("query statement:"+sql);
 		    result = statement.executeQuery(sql);
-		    result.last();
-		    int cnt = result.getRow();
-		    result.beforeFirst();
-		    logger.info("getQueryRs return:"+cnt);
+		    if (result !=null){
+		        result.last();
+		        int cnt = result.getRow();
+		        result.beforeFirst();
+		        logger.info("getQueryRs return:"+cnt);
+		    }
 		} catch(Exception e){
 			e.printStackTrace();
 			logger.debug(e);

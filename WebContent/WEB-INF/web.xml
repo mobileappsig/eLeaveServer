@@ -6,7 +6,7 @@
   </welcome-file-list>
   <context-param>
     <param-name>org.restlet.application</param-name>
-    <param-value>com.ericsson.eleave.common.AppRouter</param-value>
+    <param-value>com.ericsson.eleave.Entry.AppRouter</param-value>
   </context-param>
   <servlet>
     <servlet-name>RestletServlet</servlet-name>

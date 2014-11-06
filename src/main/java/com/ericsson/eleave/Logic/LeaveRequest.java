@@ -49,6 +49,10 @@ public class LeaveRequest extends ServerResource {
 					approveLeave(form);
 				} else if ("leavetype".equals(action)) {
 					LeaveType(form);
+				} else if ("queryleavemgr".equals(action)) {
+					queryLeaveMgr(form);
+				} else if ("todo".equals(action)) {
+					toDoList(form);
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -91,8 +95,9 @@ public class LeaveRequest extends ServerResource {
 		int caseId = -1;
 
 		try{
+			logger.info("newRequest:"+newReq);
 			JSONObject jsonReq = new JSONObject(newReq);
-			caseId = jsonReq.getInt("CaseId");
+			//caseId = jsonReq.getInt("CaseId");
 			if ("new".equals(type)){
 			    caseId = LeaveProc.newLeaveRequest(jsonReq);
 			    //System.out.print("caseId:"+caseId);
@@ -178,6 +183,45 @@ public class LeaveRequest extends ServerResource {
 		    	jsonObj.put("state", 104);
 			    jsonObj.put("msg", "Get Leave Type Error!");				
 		    }
+    	} catch (Exception e){
+			e.printStackTrace();
+		}
+    }
+    
+    private void queryLeaveMgr(Form form){
+    	String eId = form.getFirstValue("EID");
+    	jsonObj = new JSONObject();
+    	String queryStr = "select distinct(CaseId),EmployeeId,LeaveTypeName,IssuedDate from view_case where EmployeeId in"
+    			        + "(select EmployeeId from employee where LeaderId = (select employeeId from employee where EID= '"
+    			        + eId + "'))";
+    	
+    	try {
+    		jsonObj = EleaveDB.getJSONBySql(queryStr);
+        	if (jsonObj == null) {
+	    		jsonObj = new JSONObject();
+		    	jsonObj.put("state", 104);
+			    jsonObj.put("msg", "No requests found!");
+		    }
+    	} catch (Exception e){
+			e.printStackTrace();
+		}
+    }
+    
+    private void toDoList(Form form){
+    	String eId = form.getFirstValue("EID");
+    	jsonObj = new JSONObject();
+    	JSONObject rs = new JSONObject();
+    	try {
+    	    String queryStr = "select distinct(CaseId),EnglisthName,LeaveTypeName,IssuedDate from view_case where "
+    			    + "StatusID = 2 and EID ='"+eId+"'";
+    	    rs = EleaveDB.getJSONBySql(queryStr);
+    	    jsonObj.put("Employee",rs);
+    	    queryStr = "select distinct(CaseId),EnglisthName,LeaveTypeName,IssuedDate from view_case where "
+    			     + "StatusID = 2 and EmployeeId in"
+    			     + "(select EmployeeId from employee where LeaderId = (select employeeId from employee where EID= '"
+    			     + eId + "'))";
+    	    rs = EleaveDB.getJSONBySql(queryStr);
+    	    jsonObj.put("Manager",rs);
     	} catch (Exception e){
 			e.printStackTrace();
 		}

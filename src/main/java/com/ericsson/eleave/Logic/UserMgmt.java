@@ -115,8 +115,8 @@ public class UserMgmt extends ServerResource {
 	private void userLogin(Form form){
 		String eid = form.getFirstValue("EID");
 		String password = form.getFirstValue("password");
-		String queryString = "SELECT EID, password from login WHERE EID = '" + eid
-				  + "' and password = '" + password +"'";
+		String queryString = "select employee.EmployeeId, ifnull(employee.Role,'NULL') Role from employee,login where employee.EID = login.EID and login.EID = '"
+				 + eid + "' and login.password = '" + password +"'";
 		try {
 			jsonObj = EleaveDB.getJSONBySql(queryString);
 			if (jsonObj != null) {
