@@ -53,6 +53,8 @@ public class LeaveRequest extends ServerResource {
 					queryLeaveMgr(form);
 				} else if ("todo".equals(action)) {
 					toDoList(form);
+				} else if ("rejectleave".equals(action)) {
+					rejectLeave(form);
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -129,10 +131,10 @@ public class LeaveRequest extends ServerResource {
 			if (LeaveProc.cancelLeaveRequest(Util.stringToInt(caseId))){
 				jsonObj.put("state", 200);
     			jsonObj.put("CaseId", caseId);
-				jsonObj.put("msg", "Case cancel!");
+				jsonObj.put("msg", "Case cancelled!");
 			} else {
 				jsonObj.put("state", 104);
-    	    	jsonObj.put("msg", "case cancel failed!");
+    	    	jsonObj.put("msg", "case cancelled failed!");
 			}
     	} catch (Exception e){
 			e.printStackTrace();
@@ -227,4 +229,21 @@ public class LeaveRequest extends ServerResource {
 		}
     }
 
+    private void rejectLeave(Form form){
+    	String caseId = form.getFirstValue("CaseId");
+    	jsonObj = new JSONObject();
+    	
+    	try {
+			if (LeaveProc.rejectLeaveRequest(Util.stringToInt(caseId))){
+				jsonObj.put("state", 200);
+    			jsonObj.put("CaseId", caseId);
+				jsonObj.put("msg", "Case rejected!");
+			} else {
+				jsonObj.put("state", 104);
+    	    	jsonObj.put("msg", "case rejected failed!");
+			}
+    	} catch (Exception e){
+			e.printStackTrace();
+		}
+    }
 }

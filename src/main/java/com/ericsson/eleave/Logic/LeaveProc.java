@@ -102,6 +102,7 @@ public class LeaveProc {
 					remaindays = remaindays + thisaddi;
 					if (remaindays > 0){
 						thistakeaddi = thisTakenDays - thisstat;
+						thistakestat = thisstat;
 					} else {
 						thistakestat = thisstat;
 						thistakeaddi = thisaddi;
@@ -303,7 +304,7 @@ public class LeaveProc {
     	    	String amPm = detailItem.getString("AmOrPm");
     	    	logger.info("check duplicate:"+eid+","+strStartDate+","+strStopDate);
     	    	
-    	    	String chkSql = "SELECT * from leave_case_detail where StartDay = '" + strStartDate + "' and '" + strStopDate + "' and AmOrPm ";
+    	    	String chkSql = "SELECT * from view_case where (StatusID = 2 or StatusID = 3) and StartDay = '" + strStartDate + "' and '" + strStopDate + "' and AmOrPm ";
     	    	if ("NULL".equals(amPm)) {
     	    		chkSql += " is " + amPm;
     	    	} else {
@@ -407,7 +408,7 @@ public class LeaveProc {
     	    	submFlag = true;
     	    }
 			if (!submFlag) return submFlag;
-    	    String updSql = "UPDATE leave_case LeaveDays = " + ttlDays + " where CaseId = " + cId;
+    	    String updSql = "UPDATE leave_case set LeaveDays = " + ttlDays + " where CaseId = " + cId;
     	    if (EleaveDB.execSql(updSql)>0){
     	    	for (int i=1; i<3; i++){
     	    		String infoSql = "SELECT * from leave_taken_infor where ThisYear = 1 and EmployeeId = " + eid + " and LeavaTypeId = " + i;
@@ -527,5 +528,17 @@ public class LeaveProc {
 		}
     	
     	return reqOk;
+    }
+    
+    public static boolean rejectLeaveRequest(int cId){
+		EleaveDB.execSql("update leave_case set StatusID = 5 where CaseId = " + cId);
+		EleaveDB.transCommit();
+
+		String qrySql = "select * from view_case where StatusID != 5 and CaseId = " + cId;
+    	if (EleaveDB.execSql(qrySql)>0){
+    		return false;
+    	}
+    	
+    	return true;
     }
 }
